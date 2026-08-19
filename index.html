@@ -136,7 +136,7 @@ h1{font-size:35px;line-height:1.04}h2{font-size:28px}p{font-size:17px;line-heigh
   <button class="btn" id="gpsLaunchBtn" onclick="startGPS()">Activer ma localisation</button>
 
   <div id="permissionStatus" class="permission-card">
-    Appuie sur le bouton puis accepte la localisation lorsque l’iPhone te le demande.
+    Appuie sur le bouton puis accepte les deux demandes si elles apparaissent : orientation/mouvements et localisation.
   </div>
 
   <div class="ios-help">
@@ -251,7 +251,7 @@ const stages=[
     hint:"Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
   }
 ];
-let current=0,watchId=null,lastPos=null,heading=0;
+let current=0,watchId=null,lastPos=null,heading=0,orientationSeen=false;
 
 function showSection(id){ location.hash=id; }
 
@@ -261,19 +261,41 @@ async function startGPS(){
   const perm = document.getElementById("permissionStatus");
   const btn = document.getElementById("gpsLaunchBtn");
 
+  if(btn) btn.disabled = true;
   if(perm){
     perm.className = "permission-card";
-    perm.textContent = "Demande de localisation en cours…";
+    perm.textContent = "Demande des autorisations…";
   }
-  if(btn) btn.disabled = true;
 
   if(!window.isSecureContext){
     if(perm){
       perm.className = "permission-card permission-error";
-      perm.textContent = "Le GPS nécessite une adresse sécurisée HTTPS. Ouvre bien le site GitHub Pages et non un fichier local.";
+      perm.textContent = "Le GPS et la boussole nécessitent une adresse HTTPS.";
     }
     if(btn) btn.disabled = false;
     return;
+  }
+
+  // IMPORTANT iPhone: orientation permission must be requested
+  // synchronously from this user click, before awaiting GPS.
+  let compassGranted = false;
+
+  try{
+    if(typeof DeviceOrientationEvent !== "undefined"){
+      if(typeof DeviceOrientationEvent.requestPermission === "function"){
+        const orientationPermission = await DeviceOrientationEvent.requestPermission();
+        if(orientationPermission === "granted"){
+          compassGranted = true;
+          window.addEventListener("deviceorientation", handleOrientation, true);
+        }
+      }else{
+        // Non-iOS / browsers where explicit permission is not needed.
+        compassGranted = true;
+        window.addEventListener("deviceorientation", handleOrientation, true);
+      }
+    }
+  }catch(e){
+    compassGranted = false;
   }
 
   if(!navigator.geolocation){
@@ -285,29 +307,22 @@ async function startGPS(){
     return;
   }
 
-  // First request: forces iOS/Chrome/Safari to show the location prompt.
+  if(perm){
+    perm.className = "permission-card";
+    perm.textContent = compassGranted
+      ? "Boussole autorisée. Demande de localisation…"
+      : "Boussole non autorisée. Le GPS peut quand même fonctionner. Demande de localisation…";
+  }
+
   navigator.geolocation.getCurrentPosition(
-    async (firstPos) => {
+    (firstPos) => {
       lastPos = {lat:firstPos.coords.latitude, lon:firstPos.coords.longitude};
 
       if(perm){
         perm.className = "permission-card permission-ok";
-        perm.textContent = "Localisation autorisée. Lancement de la boussole…";
-      }
-
-      // Device orientation permission must be triggered from the user click on iPhone.
-      try{
-        if(typeof DeviceOrientationEvent !== "undefined" &&
-           typeof DeviceOrientationEvent.requestPermission === "function"){
-          const result = await DeviceOrientationEvent.requestPermission();
-          if(result === "granted"){
-            window.addEventListener("deviceorientation", handleOrientation, true);
-          }
-        }else if(typeof DeviceOrientationEvent !== "undefined"){
-          window.addEventListener("deviceorientation", handleOrientation, true);
-        }
-      }catch(e){
-        // GPS can still work without compass orientation.
+        perm.textContent = compassGranted
+          ? "GPS et boussole activés."
+          : "GPS activé. Boussole non disponible : utilise la direction en degrés et les indices.";
       }
 
       showSection("gpsGame");
@@ -317,6 +332,7 @@ async function startGPS(){
       if(watchId !== null){
         navigator.geolocation.clearWatch(watchId);
       }
+
       watchId = navigator.geolocation.watchPosition(
         updatePos,
         gpsError,
@@ -344,14 +360,25 @@ async function startGPS(){
 
 function handleOrientation(e){
   let h = null;
-  if(typeof e.webkitCompassHeading === "number"){
+
+  // iPhone Safari / Chrome (WebKit)
+  if(typeof e.webkitCompassHeading === "number" && !Number.isNaN(e.webkitCompassHeading)){
     h = e.webkitCompassHeading;
-  }else if(typeof e.alpha === "number"){
+  }
+  // Generic fallback
+  else if(typeof e.alpha === "number" && !Number.isNaN(e.alpha)){
     h = 360 - e.alpha;
   }
-  if(h !== null && !Number.isNaN(h)){
+
+  if(h !== null){
+    orientationSeen = true;
     heading = (h + 360) % 360;
     updateCompass();
+
+    const status = document.getElementById("headingText");
+    if(status && lastPos){
+      status.dataset.orientation = "ok";
+    }
   }
 }
 
@@ -399,14 +426,25 @@ function updatePos(pos){
 }
 
 function updateCompass(){
-  if(!lastPos)return;
-  const s=stages[current];
-  const b=bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
-  const rel=(b-heading+360)%360;
-  needle.style.transform=`rotate(${rel}deg)`;
-  headingText.textContent = `Direction : ${cardinal(b)} · ${Math.round(b)}°`;
-  if(typeof heading !== "number" || Number.isNaN(heading)){
-    headingText.textContent += " · orientation indisponible";
+  if(!lastPos) return;
+
+  const s = stages[current];
+  const b = bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
+  const rel = (b - heading + 360) % 360;
+
+  const needleEl = document.getElementById("needle");
+  const textEl = document.getElementById("headingText");
+
+  if(needleEl){
+    needleEl.style.transform = `rotate(${rel}deg)`;
+  }
+
+  if(textEl){
+    if(orientationSeen){
+      textEl.textContent = `Direction : ${cardinal(b)} · ${Math.round(b)}°`;
+    }else{
+      textEl.textContent = `Direction du lieu : ${cardinal(b)} · ${Math.round(b)}° · boussole iPhone en attente`;
+    }
   }
 }
 function bearing(a,b,c,d){const r=x=>x*Math.PI/180,g=x=>x*180/Math.PI,p1=r(a),p2=r(c),dl=r(d-b),y=Math.sin(dl)*Math.cos(p2),x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);return(g(Math.atan2(y,x))+360)%360}

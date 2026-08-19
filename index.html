@@ -74,37 +74,8 @@ h1{font-size:35px;line-height:1.04}h2{font-size:28px}p{font-size:17px;line-heigh
   .wrap {position:relative;z-index:2}
 }
 
-
-.permission-card{
-  margin-top:16px;
-  padding:15px;
-  border-radius:16px;
-  background:rgba(122,205,240,.07);
-  border:1px solid rgba(122,205,240,.24);
-}
-.permission-card strong{color:#eef9ff}
-.permission-error{
-  color:#ffd0d0;
-  background:rgba(255,110,110,.07);
-  border:1px solid rgba(255,130,130,.20);
-}
-.permission-ok{
-  color:#dffbea;
-  background:rgba(126,227,165,.07);
-  border:1px solid rgba(126,227,165,.20);
-}
-.ios-help{
-  margin-top:14px;
-  padding:14px;
-  border-radius:15px;
-  background:rgba(232,201,122,.07);
-  border:1px dashed rgba(232,201,122,.28);
-  color:#f4ead0;
-  font-size:14px;
-  line-height:1.5;
-}
-
 </style>
+<meta name="terra-build" content="gps-simple-v20">
 </head>
 <body>
 <div class="side-photo side-left"></div>
@@ -127,23 +98,11 @@ h1{font-size:35px;line-height:1.04}h2{font-size:28px}p{font-size:17px;line-heigh
   </div>
 </section>
 
-
 <section id="gpsStart">
   <div class="badge">Mode Aventure</div>
   <h1>Prête à partir ?</h1>
-  <p>Pour te guider, le site a besoin de ta position et, si ton iPhone le demande, de l’accès à l’orientation du téléphone.</p>
-
-  <button class="btn" id="gpsLaunchBtn" onclick="startGPS()">Activer ma localisation</button>
-
-  <div id="permissionStatus" class="permission-card">
-    Appuie sur le bouton puis accepte les deux demandes si elles apparaissent : orientation/mouvements et localisation.
-  </div>
-
-  <div class="ios-help">
-    Si rien ne se passe sur iPhone :<br>
-    Réglages → Confidentialité et sécurité → Service de localisation → active le service, puis autorise Safari ou Chrome à utiliser ta position.
-  </div>
-
+  <p>Active ta localisation. La boussole te guidera vers le premier point.</p>
+  <button class="btn" onclick="startGPS()">Activer le GPS</button>
   <a class="choice" href="#home">Changer de mode</a>
 </section>
 
@@ -152,13 +111,15 @@ h1{font-size:35px;line-height:1.04}h2{font-size:28px}p{font-size:17px;line-heigh
   <h2 id="travelTitle">Trouve le premier lieu</h2>
   <div class="compass">
     <div class="n">N</div><div class="s">S</div><div class="e">E</div><div class="o">O</div>
-    <div id="needle"></div></div>
+    <div id="needle"></div><div class="centerdot"></div>
+  </div>
   <div class="small" id="headingText" style="text-align:center">Orientation en attente…</div>
   <div class="panel" style="text-align:center">
     <div class="small">Distance restante</div>
     <div class="distance" id="distance">— m</div>
     <div id="gpsStatus">Recherche de ta position…</div>
-    </div>
+    <div class="small" id="accuracy"></div>
+  </div>
   <button class="choice" onclick="toggleHint()">Je ne trouve pas / ça ne marche pas</button>
   <div id="hintBox" class="note hidden"></div>
 </section>
@@ -251,157 +212,50 @@ const stages=[
     hint:"Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
   }
 ];
-let current=0,watchId=null,lastPos=null,heading=0,orientationSeen=false;
+let current=0,watchId=null,lastPos=null,heading=0;
 
 function showSection(id){ location.hash=id; }
 
 async function startGPS(){
   current = 0;
+  showSection("gpsGame");
+  updateStageUI();
 
-  const perm = document.getElementById("permissionStatus");
-  const btn = document.getElementById("gpsLaunchBtn");
-
-  if(btn) btn.disabled = true;
-  if(perm){
-    perm.className = "permission-card";
-    perm.textContent = "Demande des autorisations…";
-  }
-
-  if(!window.isSecureContext){
-    if(perm){
-      perm.className = "permission-card permission-error";
-      perm.textContent = "Le GPS et la boussole nécessitent une adresse HTTPS.";
-    }
-    if(btn) btn.disabled = false;
-    return;
-  }
-
-  // IMPORTANT iPhone: orientation permission must be requested
-  // synchronously from this user click, before awaiting GPS.
-  let compassGranted = false;
-
+  // Ask for compass permission from the direct user tap when iOS requires it.
   try{
     if(typeof DeviceOrientationEvent !== "undefined"){
       if(typeof DeviceOrientationEvent.requestPermission === "function"){
-        const orientationPermission = await DeviceOrientationEvent.requestPermission();
-        if(orientationPermission === "granted"){
-          compassGranted = true;
+        const result = await DeviceOrientationEvent.requestPermission();
+        if(result === "granted"){
           window.addEventListener("deviceorientation", handleOrientation, true);
         }
       }else{
-        // Non-iOS / browsers where explicit permission is not needed.
-        compassGranted = true;
         window.addEventListener("deviceorientation", handleOrientation, true);
       }
     }
   }catch(e){
-    compassGranted = false;
+    // GPS still works even if compass permission is unavailable.
   }
 
   if(!navigator.geolocation){
-    if(perm){
-      perm.className = "permission-card permission-error";
-      perm.textContent = "La géolocalisation n’est pas disponible sur ce navigateur.";
-    }
-    if(btn) btn.disabled = false;
+    const status = document.getElementById("gpsStatus");
+    if(status) status.textContent = "GPS indisponible sur cet appareil.";
     return;
   }
 
-  if(perm){
-    perm.className = "permission-card";
-    perm.textContent = compassGranted
-      ? "Boussole autorisée. Demande de localisation…"
-      : "Boussole non autorisée. Le GPS peut quand même fonctionner. Demande de localisation…";
+  if(watchId !== null){
+    navigator.geolocation.clearWatch(watchId);
   }
 
-  navigator.geolocation.getCurrentPosition(
-    (firstPos) => {
-      lastPos = {lat:firstPos.coords.latitude, lon:firstPos.coords.longitude};
-
-      if(perm){
-        perm.className = "permission-card permission-ok";
-        perm.textContent = compassGranted
-          ? "GPS et boussole activés."
-          : "GPS activé. Boussole non disponible : utilise la direction en degrés et les indices.";
-      }
-
-      showSection("gpsGame");
-      updateStageUI();
-      updatePos(firstPos);
-
-      if(watchId !== null){
-        navigator.geolocation.clearWatch(watchId);
-      }
-
-      watchId = navigator.geolocation.watchPosition(
-        updatePos,
-        gpsError,
-        {
-          enableHighAccuracy:true,
-          maximumAge:0,
-          timeout:20000
-        }
-      );
-
-      if(btn) btn.disabled = false;
-    },
-    (err) => {
-      gpsError(err, true);
-      if(btn) btn.disabled = false;
-    },
+  watchId = navigator.geolocation.watchPosition(
+    updatePos,
+    gpsError,
     {
       enableHighAccuracy:true,
-      maximumAge:0,
-      timeout:20000
+      maximumAge:1500,
+      timeout:15000
     }
   );
-}
-
-
-function handleOrientation(e){
-  let h = null;
-
-  // iPhone Safari / Chrome (WebKit)
-  if(typeof e.webkitCompassHeading === "number" && !Number.isNaN(e.webkitCompassHeading)){
-    h = e.webkitCompassHeading;
-  }
-  // Generic fallback
-  else if(typeof e.alpha === "number" && !Number.isNaN(e.alpha)){
-    h = 360 - e.alpha;
-  }
-
-  if(h !== null){
-    orientationSeen = true;
-    heading = (h + 360) % 360;
-    updateCompass();
-
-    const status = document.getElementById("headingText");
-    if(status && lastPos){
-      status.dataset.orientation = "ok";
-    }
-  }
-}
-
-
-function gpsError(err, onStart=false){
-  let message = "Impossible d’obtenir ta position.";
-
-  if(err && err.code === 1){
-    message = "Localisation refusée. Sur iPhone : Réglages → Confidentialité et sécurité → Service de localisation → Safari/Chrome → Autoriser quand l’app est active.";
-  }else if(err && err.code === 2){
-    message = "Position indisponible. Vérifie que le Service de localisation de l’iPhone est activé.";
-  }else if(err && err.code === 3){
-    message = "Le GPS met trop de temps à répondre. Essaie de sortir à l’extérieur puis relance.";
-  }
-
-  const status = document.getElementById("gpsStatus");
-  if(status) status.textContent = message;
-
-  const perm = document.getElementById("permissionStatus");
-  if(onStart && perm){
-    perm.className = "permission-card permission-error";
-    perm.textContent = message;
-  }
 }
 
 function updateStageUI(){
@@ -412,6 +266,22 @@ function updateStageUI(){
   accuracy.textContent="";
   hintBox.classList.add("hidden");
   hintBox.textContent="";
+}
+
+
+function gpsError(err){
+  const status = document.getElementById("gpsStatus");
+  if(!status) return;
+
+  if(err && err.code === 1){
+    status.textContent = "Localisation refusée. Autorise la position dans les réglages du navigateur.";
+  }else if(err && err.code === 2){
+    status.textContent = "Position indisponible pour le moment.";
+  }else if(err && err.code === 3){
+    status.textContent = "Le GPS met trop de temps à répondre. Réessaie dans quelques secondes.";
+  }else{
+    status.textContent = "Impossible d’obtenir ta position.";
+  }
 }
 
 function updatePos(pos){
@@ -426,26 +296,12 @@ function updatePos(pos){
 }
 
 function updateCompass(){
-  if(!lastPos) return;
-
-  const s = stages[current];
-  const b = bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
-  const rel = (b - heading + 360) % 360;
-
-  const needleEl = document.getElementById("needle");
-  const textEl = document.getElementById("headingText");
-
-  if(needleEl){
-    needleEl.style.transform = `rotate(${rel}deg)`;
-  }
-
-  if(textEl){
-    if(orientationSeen){
-      textEl.textContent = `Direction : ${cardinal(b)} · ${Math.round(b)}°`;
-    }else{
-      textEl.textContent = `Direction du lieu : ${cardinal(b)} · ${Math.round(b)}° · boussole iPhone en attente`;
-    }
-  }
+  if(!lastPos)return;
+  const s=stages[current];
+  const b=bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
+  const rel=(b-heading+360)%360;
+  needle.style.transform=`rotate(${rel}deg)`;
+  headingText.textContent=`Direction : ${cardinal(b)} · ${Math.round(b)}°`;
 }
 function bearing(a,b,c,d){const r=x=>x*Math.PI/180,g=x=>x*180/Math.PI,p1=r(a),p2=r(c),dl=r(d-b),y=Math.sin(dl)*Math.cos(p2),x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);return(g(Math.atan2(y,x))+360)%360}
 function cardinal(b){return ["N","NE","E","SE","S","SO","O","NO"][Math.round(b/45)%8]}

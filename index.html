@@ -266,7 +266,7 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
     <div class="compass-center" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;z-index:6;background:#0b1a16;border:3px solid #e8c97a;box-shadow:0 0 16px rgba(232,201,122,.20);"></div>
   </div>
   <div class="heading" id="headingText" style="text-align:center;margin:8px 0 4px;color:#aebdb6;font-size:14px;min-height:20px;">Orientation en attente…</div>
-  <div style="text-align:center;font-size:10px;color:#60756b;margin-top:4px;">V16</div>
+  <div style="text-align:center;font-size:10px;color:#60756b;margin-top:4px;">V17</div>
 
   <div class="panel center">
     <div class="small">Distance restante</div>
@@ -472,30 +472,33 @@ function startAdventure(isDemo){
 function loadTravel(){
   const s = stages[current];
 
-  const helpBox=document.getElementById("helpHint");
-  const helpBtn=document.getElementById("helpBtn");
-  if(helpBox){
-    helpBox.style.display="none";
-    helpBox.textContent="";
+  const helpBoxEl = document.getElementById("helpHint");
+  const helpBtnEl = document.getElementById("helpBtn");
+  if(helpBoxEl){
+    helpBoxEl.style.display = "none";
+    helpBoxEl.textContent = "";
   }
-  if(helpBtn){
-    helpBtn.textContent="Je ne trouve pas / ça ne marche pas";
+  if(helpBtnEl){
+    helpBtnEl.textContent = "Je ne trouve pas / ça ne marche pas";
   }
-  document.getElementById("stepBadge").textContent=`Étape ${current+1} sur 3`;
-  document.getElementById("travelTitle").textContent=current===0 ? "À toi de trouver le premier lieu" : "Le prochain lieu t’attend";
-  document.getElementById("travelHint").textContent="Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.";
-  document.getElementById("accuracy").textContent="";
-  const helpBox=document.getElementById("helpHint");
-  const helpBtn=document.getElementById("helpBtn");
-  if(helpBox){ helpBox.style.display="none"; helpBox.textContent=""; }
-  if(helpBtn){ helpBtn.textContent="Je ne trouve pas / ça ne marche pas"; }
-  const hb=document.getElementById("hintBox");
-  const ht2=document.getElementById("hintText");
-  if(hb) hb.classList.remove("open");
-  if(ht2) ht2.textContent="";
-  const ht=document.getElementById("headingText");
-  if(ht) ht.textContent=demo ? "Mode test : boussole simulée." : "Orientation en attente…";
-  for(let i=0;i<3;i++) document.getElementById("pr"+(i+1)).classList.toggle("done", i < current);
+
+  document.getElementById("stepBadge").textContent = `Étape ${current+1} sur 3`;
+  document.getElementById("travelTitle").textContent =
+    current === 0 ? "À toi de trouver le premier lieu" : "Le prochain lieu t’attend";
+  document.getElementById("travelHint").textContent =
+    "Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.";
+  document.getElementById("accuracy").textContent = "";
+
+  const heading = document.getElementById("headingText");
+  if(heading){
+    heading.textContent = demo ? "Mode test : boussole simulée." : "Orientation en attente…";
+  }
+
+  for(let i=0;i<3;i++){
+    const p = document.getElementById("pr"+(i+1));
+    if(p) p.classList.toggle("done", i < current);
+  }
+
   unlocked = false;
 }
 
@@ -562,9 +565,15 @@ function currentHelpHint(){
 }
 
 function showHelpHint(){
-  const box=document.getElementById("helpHint");
-  const btn=document.getElementById("helpBtn");
+  const box = document.getElementById("helpHint");
+  const btn = document.getElementById("helpBtn");
   if(!box || !btn) return;
+
+  const hints = [
+    "Premier lieu : le Jardin de Mornac. Cherche le banc où nous avions mangé un Crousty.",
+    "Deuxième lieu : l’église de Magnac. C’est l’endroit lié au calme et aux étoiles filantes.",
+    "Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
+  ];
 
   const open = box.style.display === "block";
   if(open){
@@ -572,7 +581,7 @@ function showHelpHint(){
     box.textContent = "";
     btn.textContent = "Je ne trouve pas / ça ne marche pas";
   }else{
-    box.textContent = currentHelpHint();
+    box.textContent = hints[current] || "";
     box.style.display = "block";
     btn.textContent = "Masquer l’indice";
   }

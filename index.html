@@ -226,13 +226,27 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
 <div class="sparkles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <div class="wrap"><div class="card">
 
+
 <div id="intro" class="screen active">
   <div class="badge">Notre Terra Aventure</div>
-  <h1>3 lieux. 3 souvenirs. 3 fragments.</h1>
-  <p>Pour découvrir le code du coffre, tu vas devoir retrouver trois endroits. À chaque étape, ta position sera vérifiée avant de débloquer l’énigme.</p>
-  <div class="note">Active la localisation lorsque ton téléphone te le demande. Le site n’enregistre pas ta position : elle sert uniquement à calculer ta distance jusqu’au prochain point.</div>
-  <button class="btn" onclick="startAdventure(false)">Commencer l’aventure</button>
-  <button class="btn secondary" onclick="startAdventure(true)">Mode test</button>
+  <h1>Comment veux-tu jouer ?</h1>
+  <p>Deux façons d’arriver au même coffre. À toi de choisir.</p>
+
+  <div class="panel" style="margin-top:20px;">
+    <h2 style="margin-top:0;">Mode Aventure</h2>
+    <p>J’ai envie de bouger. Utilise le GPS et la boussole pour retrouver les 3 lieux.</p>
+    <button class="btn" onclick="startAdventure(false)">Prendre la route</button>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0;">Mode Souvenirs</h2>
+    <p>J’ai la flemme de bouger. Pas besoin de GPS, mais il va falloir te souvenir de nous.</p>
+    <button class="btn secondary" onclick="startMemoryMode()">Tester ma mémoire</button>
+  </div>
+
+  <div class="note" style="margin-top:18px;">
+    Quel que soit le mode choisi, tu devras récupérer les 3 fragments pour découvrir le code du coffre.
+  </div>
 </div>
 
 <div id="travel" class="screen">
@@ -252,7 +266,7 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
     <div class="compass-center" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;z-index:6;background:#0b1a16;border:3px solid #e8c97a;box-shadow:0 0 16px rgba(232,201,122,.20);"></div>
   </div>
   <div class="heading" id="headingText" style="text-align:center;margin:8px 0 4px;color:#aebdb6;font-size:14px;min-height:20px;">Orientation en attente…</div>
-  <div style="text-align:center;font-size:10px;color:#60756b;margin-top:4px;">V14</div>
+  <div style="text-align:center;font-size:10px;color:#60756b;margin-top:4px;">V16</div>
 
   <div class="panel center">
     <div class="small">Distance restante</div>
@@ -261,6 +275,7 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
     <div class="accuracy" id="accuracy"></div>
   </div>
   <p id="travelHint">Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.</p>
+  <button class="btn secondary" style="margin-top:10px" onclick="show('intro')">Changer de mode</button>
   <div id="helpArea" style="margin-top:18px;">
     <button id="helpBtn" type="button" onclick="showHelpHint()" style="
       width:100%;
@@ -306,6 +321,48 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
   <div class="lockdigits" id="partialCode"></div>
   <p id="fragmentText"></p>
   <button class="btn" onclick="nextStage()">Continuer</button>
+</div>
+
+
+<div id="memory1" class="screen">
+  <div class="badge">Souvenir 1 sur 3</div>
+  <h1>Premier souvenir</h1>
+  <p>Où est-ce qu’on avait mangé un Crousty ensemble ?</p>
+  <button class="choice" onclick="memoryWrong(1)">Au cinéma</button>
+  <button class="choice" onclick="memoryCorrect(1)">Au Jardin de Mornac</button>
+  <button class="choice" onclick="memoryWrong(1)">À la maison</button>
+  <button class="choice" onclick="memoryWrong(1)">À Angoulême</button>
+  <p id="memoryMsg1"></p>
+</div>
+
+<div id="memory2" class="screen">
+  <div class="badge">Souvenir 2 sur 3</div>
+  <h1>Deuxième souvenir</h1>
+  <p>Où est-ce que tu es venue voir une pluie d’étoiles filantes ?</p>
+  <button class="choice" onclick="memoryWrong(2)">Au Jardin de Mornac</button>
+  <button class="choice" onclick="memoryCorrect(2)">À l’église de Magnac</button>
+  <button class="choice" onclick="memoryWrong(2)">À la maison</button>
+  <button class="choice" onclick="memoryWrong(2)">Au lycée</button>
+  <p id="memoryMsg2"></p>
+</div>
+
+<div id="memory3" class="screen">
+  <div class="badge">Souvenir 3 sur 3</div>
+  <h1>21 octobre 2025</h1>
+  <p>À quoi correspond cette date dans notre histoire ?</p>
+  <button class="choice" onclick="memoryWrong(3)">Notre premier voyage</button>
+  <button class="choice" onclick="memoryWrong(3)">Notre premier restaurant</button>
+  <button class="choice" onclick="memoryCorrect(3)">Le jour où nous avons eu les clés de notre maison</button>
+  <button class="choice" onclick="memoryWrong(3)">Notre premier Noël</button>
+  <p id="memoryMsg3"></p>
+</div>
+
+<div id="memoryFragment" class="screen center">
+  <div class="badge">Fragment récupéré</div>
+  <h1>Bien joué.</h1>
+  <div class="lockdigits" id="memoryCode"></div>
+  <p id="memoryFragmentText"></p>
+  <button class="btn" onclick="nextMemory()">Continuer</button>
 </div>
 
 <div id="final" class="screen center">
@@ -414,6 +471,16 @@ function startAdventure(isDemo){
 
 function loadTravel(){
   const s = stages[current];
+
+  const helpBox=document.getElementById("helpHint");
+  const helpBtn=document.getElementById("helpBtn");
+  if(helpBox){
+    helpBox.style.display="none";
+    helpBox.textContent="";
+  }
+  if(helpBtn){
+    helpBtn.textContent="Je ne trouve pas / ça ne marche pas";
+  }
   document.getElementById("stepBadge").textContent=`Étape ${current+1} sur 3`;
   document.getElementById("travelTitle").textContent=current===0 ? "À toi de trouver le premier lieu" : "Le prochain lieu t’attend";
   document.getElementById("travelHint").textContent="Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.";
@@ -484,21 +551,31 @@ function unlockRiddle(){
 
 
 
-function showHelpHint(){
-  const box=document.getElementById("helpHint");
-  const btn=document.getElementById("helpBtn");
-  if(!box || !btn) return;
 
+function currentHelpHint(){
   const hints=[
     "Premier lieu : le Jardin de Mornac. Cherche le banc où nous avions mangé un Crousty.",
     "Deuxième lieu : l’église de Magnac. C’est l’endroit lié au calme et aux étoiles filantes.",
     "Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
   ];
+  return hints[current] || "";
+}
 
-  box.textContent=hints[current] || "";
-  const open=box.style.display==="block";
-  box.style.display=open ? "none" : "block";
-  btn.textContent=open ? "Je ne trouve pas / ça ne marche pas" : "Masquer l’indice";
+function showHelpHint(){
+  const box=document.getElementById("helpHint");
+  const btn=document.getElementById("helpBtn");
+  if(!box || !btn) return;
+
+  const open = box.style.display === "block";
+  if(open){
+    box.style.display = "none";
+    box.textContent = "";
+    btn.textContent = "Je ne trouve pas / ça ne marche pas";
+  }else{
+    box.textContent = currentHelpHint();
+    box.style.display = "block";
+    btn.textContent = "Masquer l’indice";
+  }
 }
 
 function checkAnswer(v){
@@ -614,6 +691,62 @@ function updateCompass(){
   wrap.style.transform=`rotate(${relative}deg)`;
 
   text.textContent=`Direction : ${cardinalName(targetBearing)} · ${Math.round(targetBearing)}°`;
+}
+
+
+let memoryStep = 1;
+
+function startMemoryMode(){
+  memoryStep = 1;
+  show("memory1");
+}
+
+function memoryWrong(step){
+  const msg = document.getElementById("memoryMsg" + step);
+  if(!msg) return;
+  msg.className = "bad";
+  msg.textContent = "Ce n’est pas ça. Essaie encore.";
+}
+
+function memoryCorrect(step){
+  const msg = document.getElementById("memoryMsg" + step);
+  if(msg){
+    msg.className = "ok";
+    msg.textContent = "Bonne réponse.";
+  }
+  memoryStep = step;
+  setTimeout(showMemoryFragment, 450);
+}
+
+function showMemoryFragment(){
+  show("memoryFragment");
+
+  const digits = ["7","1","1"];
+  const box = document.getElementById("memoryCode");
+  box.innerHTML = "";
+
+  digits.forEach((d,i)=>{
+    const sp = document.createElement("span");
+    sp.textContent = i < memoryStep ? d : "•";
+    box.appendChild(sp);
+  });
+
+  const labels = [
+    "Premier fragment récupéré.",
+    "Deuxième fragment récupéré.",
+    "Troisième fragment récupéré."
+  ];
+  document.getElementById("memoryFragmentText").textContent = labels[memoryStep-1];
+}
+
+function nextMemory(){
+  if(memoryStep === 1){
+    show("memory2");
+  }else if(memoryStep === 2){
+    show("memory3");
+  }else{
+    show("final");
+  }
 }
 
 function distanceMeters(lat1,lon1,lat2,lon2){

@@ -76,6 +76,150 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
 .lockdigits span{width:58px;height:66px;display:grid;place-items:center;border-radius:13px;background:#050a08;border:2px solid #50655b;font-size:31px;font-weight:1000;color:var(--gold)}
 .note{padding:14px;border-radius:16px;background:rgba(122,205,240,.07);border:1px dashed rgba(122,205,240,.30);color:#d9eff7;font-size:14px;line-height:1.5}
 .accuracy{font-size:12px;color:#84988f;margin-top:5px}
+
+/* --- Boussole V10 corrigée --- */
+.compass{
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  margin:22px auto 8px;
+  position:relative;
+  border:2px solid rgba(232,201,122,.42);
+  background:
+    radial-gradient(circle at center, rgba(126,227,165,.12) 0 18%, transparent 19%),
+    radial-gradient(circle at center, transparent 0 45%, rgba(255,255,255,.045) 46% 48%, transparent 49%),
+    linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+  box-shadow:
+    inset 0 0 38px rgba(122,205,240,.10),
+    0 0 32px rgba(232,201,122,.08);
+  overflow:hidden;
+}
+.compass .ring{
+  position:absolute;
+  inset:16px;
+  border-radius:50%;
+  border:1px dashed rgba(255,255,255,.16);
+}
+.compass .north,
+.compass .south,
+.compass .east,
+.compass .west{
+  position:absolute;
+  z-index:5;
+  font-size:13px;
+  font-weight:900;
+  color:#c6d3cd;
+  letter-spacing:.08em;
+  line-height:1;
+}
+.compass .north{
+  top:9px;
+  left:50%;
+  transform:translateX(-50%);
+  color:#e8c97a;
+}
+.compass .south{
+  bottom:9px;
+  left:50%;
+  transform:translateX(-50%);
+}
+.compass .east{
+  right:11px;
+  top:50%;
+  transform:translateY(-50%);
+}
+.compass .west{
+  left:11px;
+  top:50%;
+  transform:translateY(-50%);
+}
+.needle-wrap{
+  position:absolute;
+  inset:22px;
+  border-radius:50%;
+  z-index:3;
+  transition:transform .28s ease-out;
+  transform-origin:50% 50%;
+}
+.needle{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:7px;
+  height:70px;
+  transform:translate(-50%,-100%);
+  transform-origin:50% 100%;
+  border-radius:999px 999px 4px 4px;
+  background:linear-gradient(180deg,#ff6868 0 52%,#d9e5df 52% 100%);
+  box-shadow:0 0 18px rgba(255,104,104,.28);
+}
+.needle:before{
+  content:"";
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  width:0;
+  height:0;
+  border-left:8px solid transparent;
+  border-right:8px solid transparent;
+  border-bottom:14px solid #ff6868;
+}
+.compass-center{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  z-index:6;
+  background:#0b1a16;
+  border:3px solid #e8c97a;
+  box-shadow:0 0 16px rgba(232,201,122,.18);
+}
+.heading{
+  text-align:center;
+  margin:8px 0 4px;
+  color:#aebdb6;
+  font-size:14px;
+  min-height:20px;
+}
+
+
+.hintbox{
+  margin-top:18px;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(232,201,122,.07);
+  border:1px dashed rgba(232,201,122,.30);
+}
+.hintbox .hint-title{
+  font-weight:900;
+  color:#e8c97a;
+  margin-bottom:8px;
+}
+.hintbox .hint-text{
+  display:none;
+  color:#f2eee4;
+  line-height:1.5;
+  font-size:16px;
+}
+.hintbox.open .hint-text{
+  display:block;
+}
+.hintbtn{
+  width:100%;
+  margin-top:10px;
+  padding:13px 15px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#19322b;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
 </style>
 </head>
 <body>
@@ -95,7 +239,21 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
   <div class="badge" id="stepBadge">Étape 1 sur 3</div>
   <div class="progress"><span id="pr1"></span><span id="pr2"></span><span id="pr3"></span></div>
   <h2 id="travelTitle">À toi de trouver le premier lieu</h2>
-  <div class="radar"></div>
+  
+  <div class="compass" style="width:190px;height:190px;border-radius:50%;margin:22px auto 8px;position:relative;border:2px solid rgba(232,201,122,.55);background:radial-gradient(circle at center,rgba(126,227,165,.13) 0 18%,transparent 19%),radial-gradient(circle at center,transparent 0 45%,rgba(255,255,255,.06) 46% 48%,transparent 49%),linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.01));box-shadow:inset 0 0 38px rgba(122,205,240,.12),0 0 32px rgba(232,201,122,.10);overflow:hidden;">
+    <div class="ring" style="position:absolute;inset:16px;border-radius:50%;border:1px dashed rgba(255,255,255,.18);"></div>
+    <div class="north" style="position:absolute;z-index:5;top:9px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:900;color:#e8c97a;line-height:1;">N</div>
+    <div class="south" style="position:absolute;z-index:5;bottom:9px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:900;color:#c6d3cd;line-height:1;">S</div>
+    <div class="east" style="position:absolute;z-index:5;right:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:900;color:#c6d3cd;line-height:1;">E</div>
+    <div class="west" style="position:absolute;z-index:5;left:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:900;color:#c6d3cd;line-height:1;">O</div>
+    <div class="needle-wrap" id="needleWrap" style="position:absolute;inset:22px;border-radius:50%;z-index:3;transition:transform .28s ease-out;transform-origin:50% 50%;">
+      <div class="needle" style="position:absolute;left:50%;top:50%;width:7px;height:70px;transform:translate(-50%,-100%);transform-origin:50% 100%;border-radius:999px 999px 4px 4px;background:linear-gradient(180deg,#ff6868 0 52%,#d9e5df 52% 100%);box-shadow:0 0 18px rgba(255,104,104,.30);"></div>
+    </div>
+    <div class="compass-center" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;z-index:6;background:#0b1a16;border:3px solid #e8c97a;box-shadow:0 0 16px rgba(232,201,122,.20);"></div>
+  </div>
+  <div class="heading" id="headingText" style="text-align:center;margin:8px 0 4px;color:#aebdb6;font-size:14px;min-height:20px;">Orientation en attente…</div>
+  <div style="text-align:center;font-size:10px;color:#60756b;margin-top:4px;">V14</div>
+
   <div class="panel center">
     <div class="small">Distance restante</div>
     <div class="distance" id="distance">— m</div>
@@ -103,7 +261,34 @@ p{font-size:17px;line-height:1.58;color:var(--muted)}
     <div class="accuracy" id="accuracy"></div>
   </div>
   <p id="travelHint">Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.</p>
-  <button id="demoArrive" class="btn secondary" style="display:none" onclick="unlockRiddle()">Simuler l’arrivée</button>
+  <div id="helpArea" style="margin-top:18px;">
+    <button id="helpBtn" type="button" onclick="showHelpHint()" style="
+      width:100%;
+      display:block;
+      padding:15px 16px;
+      border-radius:16px;
+      border:1px solid rgba(232,201,122,.38);
+      background:linear-gradient(135deg,rgba(232,201,122,.16),rgba(166,231,199,.10));
+      color:#f5e7bb;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 8px 24px rgba(0,0,0,.14);
+    ">Je ne trouve pas / ça ne marche pas</button>
+
+    <div id="helpHint" style="
+      display:none;
+      margin-top:12px;
+      padding:15px 16px;
+      border-radius:16px;
+      background:rgba(255,255,255,.045);
+      border:1px dashed rgba(232,201,122,.30);
+      color:#f4f0e6;
+      font-size:16px;
+      line-height:1.55;
+    "></div>
+  </div>
+<button id="demoArrive" class="btn secondary" style="display:none" onclick="unlockRiddle()">Simuler l’arrivée</button>
 </div>
 
 <div id="riddle" class="screen">
@@ -153,7 +338,7 @@ const stages = [
     text:"Un jour, on s’est posés exactement ici pour manger quelque chose ensemble. Qu’est-ce que c’était ?",
     choices:["Une pizza","Un burger","Un Crousty","Des tacos"],
     answer:"Un Crousty",
-    fragment:"Premier fragment récupéré."
+    fragment:"Premier fragment récupéré.", hint:"Premier lieu : le Jardin de Mornac. Cherche le banc où nous avions mangé un Crousty."
   },
   {
     name:"Sous les étoiles",
@@ -163,7 +348,7 @@ const stages = [
     text:"Moi, je suis souvent venu ici pour me poser, réfléchir et me ressourcer. Et toi, tu m’as raconté être venue ici pour observer quelque chose dans le ciel. Qu’étais-tu venue voir ?",
     choices:["Une pleine lune","Une pluie d’étoiles filantes","Un lever de soleil","Un arc-en-ciel"],
     answer:"Une pluie d’étoiles filantes",
-    fragment:"Deuxième fragment récupéré."
+    fragment:"Deuxième fragment récupéré.", hint:"Deuxième lieu : l’église de Magnac. C’est l’endroit lié au calme et aux étoiles filantes."
   },
   {
     name:"La maison",
@@ -173,7 +358,7 @@ const stages = [
     text:"Ce jour-là, quelque chose d’important nous a été remis. Qu’est-ce que c’était ?",
     choices:["Les clés de la maison","Un permis de construire","Les clés d’un Airbnb","Un cadeau"],
     answer:"Les clés de la maison",
-    fragment:"Troisième fragment récupéré."
+    fragment:"Troisième fragment récupéré.", hint:"Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
   }
 ];
 
@@ -181,6 +366,15 @@ let current = 0;
 let demo = false;
 let watchId = null;
 let unlocked = false;
+
+  const nh=document.getElementById("nativeHint");
+  const nht=document.getElementById("nativeHintText");
+  if(nh) nh.open=false;
+  if(nht) nht.textContent=stages[current].hint;
+
+let lastPos = null;
+let deviceHeading = 0;
+let headingEnabled = false;
 
 function show(id){
   document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
@@ -195,10 +389,15 @@ function startAdventure(isDemo){
   if(watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
   show("travel");
   loadTravel();
+  initCompass();
   if(demo){
     document.getElementById("demoArrive").style.display="block";
     document.getElementById("distance").textContent="Mode test";
     document.getElementById("status").textContent="Tu peux simuler l’arrivée.";
+    const nw=document.getElementById("needleWrap");
+    if(nw) nw.style.transform="rotate(55deg)";
+    const ht=document.getElementById("headingText");
+    if(ht) ht.textContent="Direction simulée : NE";
   } else {
     document.getElementById("demoArrive").style.display="none";
     if(!navigator.geolocation){
@@ -219,6 +418,16 @@ function loadTravel(){
   document.getElementById("travelTitle").textContent=current===0 ? "À toi de trouver le premier lieu" : "Le prochain lieu t’attend";
   document.getElementById("travelHint").textContent="Approche-toi du point. L’énigme se débloquera automatiquement à environ 25 mètres.";
   document.getElementById("accuracy").textContent="";
+  const helpBox=document.getElementById("helpHint");
+  const helpBtn=document.getElementById("helpBtn");
+  if(helpBox){ helpBox.style.display="none"; helpBox.textContent=""; }
+  if(helpBtn){ helpBtn.textContent="Je ne trouve pas / ça ne marche pas"; }
+  const hb=document.getElementById("hintBox");
+  const ht2=document.getElementById("hintText");
+  if(hb) hb.classList.remove("open");
+  if(ht2) ht2.textContent="";
+  const ht=document.getElementById("headingText");
+  if(ht) ht.textContent=demo ? "Mode test : boussole simulée." : "Orientation en attente…";
   for(let i=0;i<3;i++) document.getElementById("pr"+(i+1)).classList.toggle("done", i < current);
   unlocked = false;
 }
@@ -226,6 +435,8 @@ function loadTravel(){
 function updatePosition(pos){
   if(demo || unlocked) return;
   const s = stages[current];
+  lastPos = {latitude:pos.coords.latitude, longitude:pos.coords.longitude};
+  updateCompass();
   const d = distanceMeters(pos.coords.latitude,pos.coords.longitude,s.lat,s.lon);
   document.getElementById("distance").textContent = Math.round(d) + " m";
   document.getElementById("accuracy").textContent = "Précision GPS : ±" + Math.round(pos.coords.accuracy) + " m";
@@ -269,6 +480,27 @@ function unlockRiddle(){
   });
 }
 
+
+
+
+
+function showHelpHint(){
+  const box=document.getElementById("helpHint");
+  const btn=document.getElementById("helpBtn");
+  if(!box || !btn) return;
+
+  const hints=[
+    "Premier lieu : le Jardin de Mornac. Cherche le banc où nous avions mangé un Crousty.",
+    "Deuxième lieu : l’église de Magnac. C’est l’endroit lié au calme et aux étoiles filantes.",
+    "Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
+  ];
+
+  box.textContent=hints[current] || "";
+  const open=box.style.display==="block";
+  box.style.display=open ? "none" : "block";
+  btn.textContent=open ? "Je ne trouve pas / ça ne marche pas" : "Masquer l’indice";
+}
+
 function checkAnswer(v){
   const s=stages[current];
   const msg=document.getElementById("answerMsg");
@@ -308,7 +540,80 @@ function nextStage(){
     document.getElementById("demoArrive").style.display="block";
     document.getElementById("distance").textContent="Mode test";
     document.getElementById("status").textContent="Tu peux simuler l’arrivée.";
+    const nw=document.getElementById("needleWrap");
+    if(nw) nw.style.transform="rotate(55deg)";
+    const ht=document.getElementById("headingText");
+    if(ht) ht.textContent="Direction simulée : NE";
   }
+}
+
+
+async function initCompass(){
+  const text=document.getElementById("headingText");
+  if(!window.DeviceOrientationEvent){
+    text.textContent="Boussole non disponible sur cet appareil.";
+    return;
+  }
+
+  try{
+    if(typeof DeviceOrientationEvent.requestPermission === "function"){
+      const state = await DeviceOrientationEvent.requestPermission();
+      if(state !== "granted"){
+        text.textContent="Autorisation de la boussole refusée.";
+        return;
+      }
+    }
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    headingEnabled = true;
+    text.textContent="Boussole activée.";
+  }catch(e){
+    text.textContent="Impossible d’activer la boussole.";
+  }
+}
+
+function handleOrientation(event){
+  let h = null;
+
+  // iOS Safari
+  if(typeof event.webkitCompassHeading === "number"){
+    h = event.webkitCompassHeading;
+  }else if(typeof event.alpha === "number"){
+    // Generic fallback
+    h = 360 - event.alpha;
+  }
+
+  if(h === null || Number.isNaN(h)) return;
+  deviceHeading = (h + 360) % 360;
+  updateCompass();
+}
+
+function bearingDegrees(lat1,lon1,lat2,lon2){
+  const rad=x=>x*Math.PI/180;
+  const deg=x=>x*180/Math.PI;
+  const phi1=rad(lat1), phi2=rad(lat2), dLon=rad(lon2-lon1);
+  const y=Math.sin(dLon)*Math.cos(phi2);
+  const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dLon);
+  return (deg(Math.atan2(y,x))+360)%360;
+}
+
+function cardinalName(b){
+  const dirs=["N","NE","E","SE","S","SO","O","NO"];
+  return dirs[Math.round(b/45)%8];
+}
+
+function updateCompass(){
+  const wrap=document.getElementById("needleWrap");
+  const text=document.getElementById("headingText");
+  if(!wrap || !text || !lastPos) return;
+
+  const s=stages[current];
+  const targetBearing=bearingDegrees(lastPos.latitude,lastPos.longitude,s.lat,s.lon);
+
+  // Arrow relative to phone heading
+  const relative=(targetBearing-deviceHeading+360)%360;
+  wrap.style.transform=`rotate(${relative}deg)`;
+
+  text.textContent=`Direction : ${cardinalName(targetBearing)} · ${Math.round(targetBearing)}°`;
 }
 
 function distanceMeters(lat1,lon1,lat2,lon2){

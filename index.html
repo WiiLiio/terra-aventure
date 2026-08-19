@@ -75,7 +75,7 @@ h1{font-size:35px;line-height:1.04}h2{font-size:28px}p{font-size:17px;line-heigh
 }
 
 </style>
-<meta name="terra-build" content="gps-simple-v20">
+<meta name="terra-build" content="v21-absolute-compass">
 </head>
 <body>
 <div class="side-photo side-left"></div>
@@ -212,30 +212,79 @@ const stages=[
     hint:"Troisième lieu : notre maison. Le dernier point t’attend devant chez nous."
   }
 ];
-let current=0,watchId=null,lastPos=null,heading=0;
+let current=0,watchId=null,lastPos=null,heading=0,absoluteCompassActive=false;
 
 function showSection(id){ location.hash=id; }
 
+
+function setCompassHeading(value){
+  if(typeof value !== "number" || Number.isNaN(value)) return;
+  heading = (value + 360) % 360;
+  absoluteCompassActive = true;
+  updateCompass();
+}
+
+function handleAbsoluteOrientation(e){
+  // On an absolute event alpha is referenced to the Earth frame.
+  if(typeof e.webkitCompassHeading === "number" && !Number.isNaN(e.webkitCompassHeading)){
+    setCompassHeading(e.webkitCompassHeading);
+    return;
+  }
+  if(typeof e.alpha === "number" && !Number.isNaN(e.alpha)){
+    // For absolute alpha, convert device rotation to compass heading.
+    setCompassHeading(360 - e.alpha);
+  }
+}
+
+function handleRelativeOrientation(e){
+  // iOS/WebKit often exposes a direct north-referenced heading here.
+  if(typeof e.webkitCompassHeading === "number" && !Number.isNaN(e.webkitCompassHeading)){
+    setCompassHeading(e.webkitCompassHeading);
+    return;
+  }
+
+  // Only use alpha as fallback if no absolute compass source has appeared.
+  if(!absoluteCompassActive && typeof e.alpha === "number" && !Number.isNaN(e.alpha)){
+    setCompassHeading(360 - e.alpha);
+  }
+}
+
+async function enableCompassFromTap(){
+  try{
+    if(typeof DeviceOrientationEvent === "undefined"){
+      return false;
+    }
+
+    if(typeof DeviceOrientationEvent.requestPermission === "function"){
+      let result;
+      try{
+        // Current API: true asks for absolute orientation / magnetometer access.
+        result = await DeviceOrientationEvent.requestPermission(true);
+      }catch(e){
+        // Older WebKit implementations accept no argument.
+        result = await DeviceOrientationEvent.requestPermission();
+      }
+
+      if(result !== "granted") return false;
+    }
+
+    // Listen to both. The absolute event is preferred when available.
+    window.addEventListener("deviceorientationabsolute", handleAbsoluteOrientation, true);
+    window.addEventListener("deviceorientation", handleRelativeOrientation, true);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
 async function startGPS(){
   current = 0;
+
+  // IMPORTANT: this runs directly from the user's tap.
+  await enableCompassFromTap();
+
   showSection("gpsGame");
   updateStageUI();
-
-  // Ask for compass permission from the direct user tap when iOS requires it.
-  try{
-    if(typeof DeviceOrientationEvent !== "undefined"){
-      if(typeof DeviceOrientationEvent.requestPermission === "function"){
-        const result = await DeviceOrientationEvent.requestPermission();
-        if(result === "granted"){
-          window.addEventListener("deviceorientation", handleOrientation, true);
-        }
-      }else{
-        window.addEventListener("deviceorientation", handleOrientation, true);
-      }
-    }
-  }catch(e){
-    // GPS still works even if compass permission is unavailable.
-  }
 
   if(!navigator.geolocation){
     const status = document.getElementById("gpsStatus");
@@ -296,12 +345,26 @@ function updatePos(pos){
 }
 
 function updateCompass(){
-  if(!lastPos)return;
-  const s=stages[current];
-  const b=bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
-  const rel=(b-heading+360)%360;
-  needle.style.transform=`rotate(${rel}deg)`;
-  headingText.textContent=`Direction : ${cardinal(b)} · ${Math.round(b)}°`;
+  if(!lastPos) return;
+
+  const s = stages[current];
+  const target = bearing(lastPos.lat,lastPos.lon,s.lat,s.lon);
+  const relative = (target - heading + 360) % 360;
+
+  const needleEl = document.getElementById("needle");
+  const textEl = document.getElementById("headingText");
+
+  if(needleEl){
+    needleEl.style.transform = `rotate(${relative}deg)`;
+  }
+
+  if(textEl){
+    if(absoluteCompassActive){
+      textEl.textContent = `Direction : ${cardinal(target)} · ${Math.round(target)}°`;
+    }else{
+      textEl.textContent = `Direction du lieu : ${cardinal(target)} · ${Math.round(target)}° · boussole en attente`;
+    }
+  }
 }
 function bearing(a,b,c,d){const r=x=>x*Math.PI/180,g=x=>x*180/Math.PI,p1=r(a),p2=r(c),dl=r(d-b),y=Math.sin(dl)*Math.cos(p2),x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);return(g(Math.atan2(y,x))+360)%360}
 function cardinal(b){return ["N","NE","E","SE","S","SO","O","NO"][Math.round(b/45)%8]}
